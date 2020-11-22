@@ -197,10 +197,12 @@ public class PAreaTaxonomyGenerator {
                 
                 Set<PArea> areaPAreas = area.getPAreas();
                 
-                areaPAreas.forEach((parea) -> {
-                    Area parentArea = areasByRelationships.get(parea.getRelationships());
-                    areaHierarchy.addEdge(area, parentArea);
-                });
+                areaPAreas.stream()
+                        .flatMap( (parea) -> pareaHierarchy.getParents(parea).stream())
+                        .forEach( parentPArea -> {
+                            Area parentArea = areasByRelationships.get(parentPArea.getRelationships());
+                            areaHierarchy.addEdge(area, parentArea);
+                        });
             }
         });
         
@@ -272,10 +274,12 @@ public class PAreaTaxonomyGenerator {
             if (!area.equals(areaHierarchy.getRoot())) {
                 Set<PArea> areaPAreas = area.getPAreas();
 
-                areaPAreas.forEach((parea) -> {
-                    Area parentArea = areasByRelationships.get(parea.getRelationships());
-                    areaHierarchy.addEdge(area, parentArea);
-                });
+                areaPAreas.stream()
+                      .flatMap( (parea) -> pareaHierarchy.getParents((T)parea).stream())
+                      .forEach( parentPArea -> {
+                          Area parentArea = areasByRelationships.get(parentPArea.getRelationships());
+                          areaHierarchy.addEdge(area, parentArea);
+                      });
             }
         });
         

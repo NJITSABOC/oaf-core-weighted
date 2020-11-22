@@ -1,5 +1,6 @@
 package edu.njit.cs.saboc.blu.core.graph.pareataxonomy;
 
+import edu.njit.cs.saboc.blu.core.abn.diff.utils.SetUtilities;
 import edu.njit.cs.saboc.blu.core.abn.node.PartitionedNode;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.Area;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.InheritableProperty;
@@ -96,7 +97,7 @@ public class NoRegionsPAreaTaxonomyLayout<T extends PAreaTaxonomy<? extends PAre
 
             int[] areaPAreaX;
 
-            if (lastArea != null && lastArea.getRelationships().size() != area.getRelationships().size()) {
+            if (lastArea != null && areaLevel.get(lastArea).intValue() != areaLevel.get(area).intValue()) {
 
                 areaXOffset = 0;
                 areaYOffset += previousLevelHeight + GraphLayoutConstants.CONTAINER_ROW_HEIGHT;
@@ -201,7 +202,8 @@ public class NoRegionsPAreaTaxonomyLayout<T extends PAreaTaxonomy<? extends PAre
                     regionWidth + GraphLayoutConstants.GROUP_CHANNEL_WIDTH + 10,
                     height - 20,
                     color,
-                    areaLabel);
+                    areaLabel
+            );
 
             regionBump++;
 
@@ -305,6 +307,17 @@ public class NoRegionsPAreaTaxonomyLayout<T extends PAreaTaxonomy<? extends PAre
         FontMetrics fontMetrics = canvas.getFontMetrics(new Font("SansSerif", Font.BOLD, 14));
 
         Set<InheritableProperty> properties = area.getRelationships();
+        
+         if(this.useAlternateLayoutMode) {
+            Set<Area> parentAreas = getPAreaTaxonomy().getAreaTaxonomy().getAreaHierarchy().getParents(area);
+            
+            Set<InheritableProperty> allParentProperties = parentAreas
+                    .stream()
+                    .flatMap( (parentArea) -> parentArea.getRelationships().stream() )
+                    .collect(Collectors.toSet());
+            
+            properties = SetUtilities.getSetDifference(properties, allParentProperties);
+        }
 
         String[] entries;
 

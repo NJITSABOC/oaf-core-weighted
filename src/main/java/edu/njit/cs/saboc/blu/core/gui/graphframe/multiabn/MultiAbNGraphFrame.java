@@ -2,6 +2,7 @@ package edu.njit.cs.saboc.blu.core.gui.graphframe.multiabn;
 
 import edu.njit.cs.saboc.blu.core.abn.AbstractionNetwork;
 import edu.njit.cs.saboc.blu.core.abn.disjoint.DisjointAbstractionNetwork;
+import edu.njit.cs.saboc.blu.core.abn.node.SinglyRootedNode;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.DisjointPArea;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PArea;
 import edu.njit.cs.saboc.blu.core.abn.pareataxonomy.PAreaTaxonomy;
@@ -9,6 +10,7 @@ import edu.njit.cs.saboc.blu.core.abn.tan.Cluster;
 import edu.njit.cs.saboc.blu.core.abn.tan.ClusterTribalAbstractionNetwork;
 import edu.njit.cs.saboc.blu.core.abn.targetbased.TargetAbstractionNetwork;
 import edu.njit.cs.saboc.blu.core.graph.AbstractionNetworkGraph;
+import edu.njit.cs.saboc.blu.core.graph.nodes.SinglyRootedNodeEntry;
 import edu.njit.cs.saboc.blu.core.graph.tan.DisjointCluster;
 import edu.njit.cs.saboc.blu.core.gui.gep.AbNExplorationPanel;
 import edu.njit.cs.saboc.blu.core.gui.gep.initializer.AbNExplorationPanelGUIInitializer;
@@ -31,6 +33,9 @@ import edu.njit.cs.saboc.blu.core.gui.graphframe.multiabn.history.AbNDerivationH
 import edu.njit.cs.saboc.blu.core.gui.workspace.AbNWorkspace;
 import edu.njit.cs.saboc.blu.core.gui.workspace.AbNWorkspaceManager;
 import edu.njit.cs.saboc.blu.core.utils.toolstate.OAFStateFileManager;
+import java.util.Set;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 
 /**
  *
@@ -57,8 +62,6 @@ public class MultiAbNGraphFrame extends JInternalFrame {
 
     private final AbNHistoryNavigationPanel historyNavigationPanel;
     
-    
-    
     private Optional<AbNWorkspace> optWorkspace;
     
     private final AbNWorkspaceManager workspaceManager;
@@ -66,6 +69,14 @@ public class MultiAbNGraphFrame extends JInternalFrame {
     private final OAFStateFileManager stateFileManager;
     
     private final FrameState frameState;
+    
+    private final boolean showTabs = true;
+    
+    
+    private JTabbedPane tabbedPane = new JTabbedPane();
+
+    private JScrollPane scroller;
+    private JPanel scrollerContentPanel;
 
     public MultiAbNGraphFrame(
             JFrame parentFrame, 
@@ -97,20 +108,39 @@ public class MultiAbNGraphFrame extends JInternalFrame {
         this.frameState = new FrameState();
 
         this.setLayout(new BorderLayout());
-
-        JPanel northPanel = new JPanel(new BorderLayout());
-        northPanel.add(taskPanel, BorderLayout.CENTER);
         
         this.abnDerivationHistory = new AbNDerivationHistory(this);
 
         this.historyNavigationPanel = new AbNHistoryNavigationPanel(
                 this,
                 abnDerivationHistory);
+        
+        if(this.showTabs) {
 
-        northPanel.add(historyNavigationPanel, BorderLayout.WEST);
+            this.scrollerContentPanel = new JPanel(new BorderLayout());
+            this.scroller = new JScrollPane(scrollerContentPanel);
+            
+            
+            tabbedPane.addTab("Explore", abnExplorationPanel);
+            tabbedPane.addTab("Edit", scroller);
+            
 
-        this.add(northPanel, BorderLayout.NORTH);
-        this.add(abnExplorationPanel, BorderLayout.CENTER);
+            //add(menuPanel, BorderLayout.NORTH);
+
+            add(tabbedPane);
+            
+            tabbedPane.setEnabled(false);
+            
+        } else {
+            JPanel northPanel = new JPanel(new BorderLayout());
+            northPanel.add(taskPanel, BorderLayout.CENTER);
+            
+            northPanel.add(historyNavigationPanel, BorderLayout.WEST);
+
+            this.add(northPanel, BorderLayout.NORTH);
+            this.add(abnExplorationPanel, BorderLayout.CENTER);
+        }
+
 
         this.addInternalFrameListener(new InternalFrameAdapter() {
 
@@ -516,6 +546,40 @@ public class MultiAbNGraphFrame extends JInternalFrame {
             this.taskPanel.repaint();
 
             this.abnExplorationPanel.initialize(graph, gepConfiguration, painter, initializer);
+            
+            if(this.showTabs) {
+                scrollerContentPanel.add(graph, BorderLayout.CENTER);
+
+                scroller.revalidate();
+                scroller.repaint();
+
+                tabbedPane.setEnabled(true);
+
+                tabbedPane.validate();
+                tabbedPane.repaint();
+                
+                Set<SinglyRootedNode> nodes = graph.getAbstractionNetwork().getNodes();
+                
+                boolean drawAllEdges = true;
+                
+                if(drawAllEdges) {
+                    
+                    nodes.forEach( (node) -> {
+                        
+                        SinglyRootedNodeEntry entry = (SinglyRootedNodeEntry)graph.getNodeEntries().get(node);
+                        
+                        graph.getAbstractionNetwork()
+                                .getNodeHierarchy()
+                                .getParents(node)
+                                .forEach( (parent) -> {
+                                    
+                                    SinglyRootedNodeEntry parentEntry = (SinglyRootedNodeEntry)graph.getNodeEntries().get(parent);
+                                    
+                                    graph.drawRoutedEdge(entry, parentEntry);
+                        });
+                    });
+                }
+            }
         });
     }
 }
